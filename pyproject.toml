@@ -1,0 +1,39 @@
+[build-system]
+requires = ["setuptools>=61.0"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "cloudpail"
+version = "1.0.3"
+description = "The Developer-First CLI for AWS S3 Management."
+readme = "README.md"
+requires-python = ">=3.8"
+authors = [
+  { name="shakeelsaga", email="shakeelmohammedofficial@gmail.com" },
+]
+classifiers = [
+    "Programming Language :: Python :: 3",
+    "License :: OSI Approved :: MIT License",
+    "Operating System :: OS Independent",
+    "Topic :: Utilities",
+    "Environment :: Console",
+    "Intended Audience :: Developers",
+    "Intended Audience :: System Administrators",
+]
+dependencies = [
+    "boto3",
+    "rich",
+    "InquirerPy",
+    "pyperclip"
+]
+
+[project.urls]
+Homepage = "https://github.com/shakeelsaga/CloudPail"
+Issues = "https://github.com/shakeelsaga/CloudPail/issues"
+
+[project.scripts]
+cloudpail = "cloudpail.main:main"
+
+[tool.setuptools]
+# This tells setuptools to look for the 'cloudpail' folder
+packages = ["cloudpail"]

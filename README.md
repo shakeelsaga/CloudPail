@@ -1,27 +1,91 @@
-# ☁️ CloudPail
+# CloudPail
 
-> **The Developer-First CLI for AWS S3.**
-> Stop fighting with the AWS Console. Manage buckets and objects with speed and style.
+[![Python 3.8+](https://img.shields.io/badge/python-3.8+-blue.svg)](https://www.python.org/downloads/)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+[![AWS S3](https://img.shields.io/badge/AWS-S3-orange)](https://aws.amazon.com/s3/)
+[![Code Style: Black](https://img.shields.io/badge/code%20style-black-000000.svg)](https://github.com/psf/black)
 
-![Python](https://img.shields.io/badge/Python-3.8%2B-blue)
-![AWS](https://img.shields.io/badge/AWS-S3-orange)
+**The Developer-First Interface for AWS S3 Management.**
 
-## Features
-* **Interactive UI:** Navigate buckets and objects using arrow keys. No more typing long names.
-* **Profile Switcher:** Instantly toggle between `dev`, `prod`, and `test` AWS accounts.
-* **Safety First:** "Visual Deletion" checks prevent you from deleting the wrong files.
-* **Smart Uploads:** Auto-detects file types (MIME) and supports recursive folder uploads.
-* **Presigned URLs:** Generate shareable links in one click (auto-copied to clipboard).
-* **Region Aware:** Automatically handles S3 Endpoint URLs to prevent Signature errors.
+CloudPail is a terminal-based utility designed to bridge the gap between the complex, syntax-heavy AWS CLI and the latency-prone AWS Console. It provides a robust Text User Interface (TUI) for managing cloud storage resources with speed, precision, and operational safety.
 
-## 📦 Installation
+---
+
+## Project Overview
+
+Managing S3 resources often requires a trade-off between speed and usability. The AWS Console offers visual feedback but suffers from slow load times and context switching. The AWS CLI offers speed but requires memorizing verbose commands and lacks safeguards against user error.
+
+CloudPail resolves this by offering an interactive shell that adheres to the **"Append-Only"** design philosophy, preserving session context while providing immediate visual feedback for all operations.
+
+## Core Capabilities
+
+### 1. Region-Aware Architecture
+Standard Boto3 implementations often default to global endpoints, causing `SignatureDoesNotMatch` errors when interacting with buckets in specific regions (e.g., `eu-north-1`). CloudPail automatically detects the bucket's region and routes requests to the correct regional endpoint, ensuring cryptographic signature compliance across all AWS zones.
+
+### 2. Operational Safety Protocols
+* **Verification:** Implements mandatory `head_object` pre-flight checks before deletion to prevent "false positives" on non-existent resources.
+* **Recursive Cleanup:** Includes logic to detect non-empty buckets and offers a recursive deletion workflow to remove all objects, delete markers, and versions before removing the bucket itself.
+
+### 3. Session Management
+* **Dynamic Profile Switching:** Reads directly from `~/.aws/credentials` to allow instant context switching between environments (e.g., Development, Staging, Production) without restarting the shell.
+* **Session Persistence:** Maintains authentication state globally across the application lifecycle.
+
+### 4. Intelligent Asset Management
+* **MIME-Type Detection:** Automatically identifies file types during upload to set accurate `Content-Type` headers, ensuring assets render correctly in web browsers.
+* **Recursive Folder Uploads:** Supports batch uploading of directory structures while maintaining the hierarchy within the S3 bucket.
+* **Presigned URL Generation:** Generates secure, time-limited access links (1-hour expiration) and automatically copies them to the system clipboard for immediate sharing.
+
+## Installation
+
+### Prerequisites
+* Python 3.8 or higher
+* Valid AWS Credentials configured via AWS CLI or manually in `~/.aws/credentials`
+
+### Setup Instructions
+
+1.  **Clone the repository:**
+    ```bash
+    git clone [https://github.com/shakeelsaga/CloudPail.git](https://github.com/shakeelsaga/CloudPail.git)
+    ```
+
+2.  **Navigate to the project directory:**
+    ```bash
+    cd CloudPail
+    ```
+
+3.  **Install the package:**
+    ```bash
+    pip install -e .
+    ```
+
+## Usage
+
+Once installed, the application is available system-wide using the `cloudpail` command:
 
 ```bash
-# 1. Clone the repo
-git clone [https://github.com/yourusername/CloudPail.git](https://github.com/yourusername/CloudPail.git)
+cloudpail
+```
 
-# 2. Go to directory
-cd CloudPail
+## Navigation
 
-# 3. Install (Editable Mode)
-pip install -e .
+The interface uses standard keyboard controls for efficient operation:
+
+* **Arrow Keys:** Navigate through bucket and object lists.
+* **Enter:** Confirm selection or execute the chosen action.
+* **Type-to-Filter:** Rapidly filter long lists by typing the resource name directly into the menu.
+
+## System Architecture
+
+CloudPail is built upon a modern Python stack designed for reliability and performance:
+
+* **Boto3:** Handles low-level AWS SDK interactions, authentication, and session management.
+* **Rich:** Renders high-performance tables, status indicators, and formatted terminal output.
+* **InquirerPy:** Manages interactive user input, validation, and menu navigation.
+* **Pyperclip:** Provides cross-platform clipboard integration for copying presigned URLs.
+
+## License
+
+This project is distributed under the MIT License. See `LICENSE` for more information.
+
+Copyright (c) 2025 shakeelsaga.
+

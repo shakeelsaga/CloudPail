@@ -9,6 +9,7 @@ from rich.theme import Theme
 from rich.panel import Panel
 from rich.table import Table
 from rich.text import Text
+from rich import box
 from InquirerPy import inquirer
 from InquirerPy.base.control import Choice
 try:
@@ -35,34 +36,40 @@ console = Console(theme=theme_matcha)
 active_session = None
 active_client = None
 current_profile_name = "default"
+current_region = "us-east-1"
 
 # ======= UI SUPPORT =======
 
-def splash():
+def print_banner():
     logo = r"""
-    [accent]
-       ________                _______       _ __ 
-      / ____/ /___  __  ______/ /  __ \___ _(_) / 
-     / /   / / __ \/ / / / __  / /_/ / __ `/ / /  
-    / /___/ / /_/ / /_/ / /_/ / ____/ /_/ / / /   
-    \____/_/\____/\__,_/\__,_/_/    \__,_/_/_/    
-    [/accent]
-    [base]   CloudPail CLI  ::  v1.0[/base]
+[accent]
+   ________                __ ___        _ __ 
+  / ____/ /___  __  ______/ / __  \___ _(_) / 
+ / /   / / __ \/ / / / __  / /_/ / __ `/ / /  
+/ /___/ / /_/ / /_/ / /_/ / ____/ /_/ / / /   
+\____/_/\____/\__,_/\__,_/_/    \__,_/_/_/    
+[/accent]
+[base]      AWS S3 MANAGEMENT INTERFACE  ::  v1.0.3[/base]
     """
-    console.print(Panel(logo, border_style="border", expand=False))
-    console.print(f"[muted]   Logged in as: [bold highlight]{current_profile_name}[/][/muted]\n")
+    
+    status_text = (
+        f"[muted]User Profile:[/muted] [bold highlight]{current_profile_name}[/bold highlight]    "
+        f"[muted]Active Region:[/muted] [bold highlight]{current_region}[/bold highlight]"
+    )
+    
+    console.print(Panel(logo, border_style="border", expand=False, padding=(1, 4)))
+    console.print(f"   {status_text}\n")
 
 def get_available_profiles():
     return boto3.Session().available_profiles
 
-from botocore.config import Config # Import this at top
-
 def init_session(profile_name):
-    global active_session, active_client, current_profile_name
+    global active_session, active_client, current_profile_name, current_region
     try:
         active_session = boto3.Session(profile_name=profile_name)
         
         region = active_session.region_name or "us-east-1"
+        current_region = region
 
         if region == "us-east-1":
             endpoint = "https://s3.us-east-1.amazonaws.com"
@@ -79,43 +86,50 @@ def init_session(profile_name):
         current_profile_name = profile_name
         return True
     except Exception as e:
-        console.print(f"[error]Failed to load profile '{profile_name}': {e}[/error]")
+        console.print(f"[error]✖ CRITICAL: Failed to load profile '{profile_name}': {e}[/error]")
         return False
 
+def format_size(size_bytes):
+    if size_bytes >= 1048576:
+        return f"{size_bytes / 1048576:.2f} MB"
+    else:
+        return f"{size_bytes / 1024:.2f} KB"
+
 def select_bucket_interactive(client):
-    with console.status("[accent]Fetching buckets...[/]", spinner="aesthetic"):
+    with console.status("[accent]Retrieving bucket list...[/]", spinner="aesthetic"):
         buckets = bucket_listing(client)
     
     if not buckets:
-        console.print("[warning]No buckets found![/warning]")
+        console.print("[warning]⚠ No buckets found in this region.[/warning]")
         return None
 
     choices = [Choice(b['Name'], name=b['Name']) for b in buckets]
-    choices.append(Choice(value=None, name="❌ Cancel"))
+    choices.append(Choice(value=None, name="« Cancel"))
 
     return inquirer.select(
-        message="Select a Bucket:",
+        message="Select Bucket:",
         choices=choices,
         default=None,
         pointer="⟢"
     ).execute()
 
 def select_object_interactive(client, bucket_name):
-    with console.status(f"[accent]Fetching objects from {bucket_name}...[/]", spinner="aesthetic"):
+    with console.status(f"[accent]Scanning objects in {bucket_name}...[/]", spinner="aesthetic"):
         objects = object_listing(client, bucket_name)
 
     if not objects:
-        console.print("[warning]Bucket is empty![/warning]")
+        console.print("[warning]⚠ Bucket is currently empty.[/warning]")
         return None
 
-    choices = [Choice(o['Key'], name=f"{o['Key']} ({o['Size']/1024:.1f} KB)") for o in objects[:50]]
-    if len(objects) > 50:
-        choices.append(Choice(value=None, name="... (List truncated, use search logic for more)"))
+    choices = [Choice(o['Key'], name=f"{o['Key']}  ({format_size(o['Size'])})") for o in objects[:50]]
     
-    choices.append(Choice(value=None, name="❌ Cancel"))
+    if len(objects) > 50:
+        choices.append(Choice(value=None, name="... (List truncated for performance)"))
+    
+    choices.append(Choice(value=None, name="« Cancel"))
 
     return inquirer.select(
-        message="Select an Object:",
+        message="Select Object:",
         choices=choices,
         default=None,
         pointer="⟢"
@@ -128,7 +142,7 @@ def bucket_listing(client):
         response = client.list_buckets()
         return response.get("Buckets", [])
     except CE as e:
-        console.print(f"[error]Error listing buckets: {e}[/error]")
+        console.print(f"[error]✖ Failed to list buckets: {e}[/error]")
         return []
 
 def bucket_creation(client, bucket_name, region):
@@ -140,7 +154,7 @@ def bucket_creation(client, bucket_name, region):
             client.create_bucket(Bucket=bucket_name, CreateBucketConfiguration={"LocationConstraint": region})
         return True
     except CE as e:
-        console.print(f"[error]AWS Error: {e}[/error]")
+        console.print(f"[error]✖ Creation Failed: {e}[/error]")
         return False
 
 def is_bucket_empty(client, bucket_name):
@@ -151,9 +165,9 @@ def is_bucket_empty(client, bucket_name):
         return False
 
 def bucket_emptying(client, bucket_name):
-    console.print(f"[muted]🧹 Emptying '{bucket_name}'...[/muted]")
+    console.print(f"[muted]» Preparing to clear '{bucket_name}'...[/muted]")
     try:
-        with console.status("[accent]Purging objects...[/]", spinner="aesthetic"):
+        with console.status("[accent]Removing objects and versions...[/]", spinner="aesthetic"):
             paginator = client.get_paginator("list_object_versions")
             for page in paginator.paginate(Bucket=bucket_name):
                 to_delete = []
@@ -166,37 +180,39 @@ def bucket_emptying(client, bucket_name):
                     client.delete_objects(Bucket=bucket_name, Delete={"Objects": to_delete})
         return True
     except CE as e:
-        console.print(f"[error]Failed to empty bucket: {e}[/error]")
+        console.print(f"[error]✖ Operation Failed: {e}[/error]")
         return False
 
 def bucket_deletion(client, bucket_name):
     try:
-        # 1. Check content (Spinning)
-        with console.status("[accent]Checking contents...[/]", spinner="aesthetic"):
+        with console.status("[accent]Verifying bucket status...[/]", spinner="aesthetic"):
             empty = is_bucket_empty(client, bucket_name)
 
-        # 2. Interaction (No Spinner)
         if not empty:
-            console.print(f"[warning]⚠️  Bucket '{bucket_name}' is not empty![/warning]")
-            if not inquirer.confirm(message="Force delete (nuke contents)?", default=False).execute():
+            console.print(f"[warning]⚠ Bucket '{bucket_name}' is not empty.[/warning]")
+            confirm = inquirer.confirm(
+                message="Recursively delete all contents and the bucket?", 
+                default=False
+            ).execute()
+            
+            if not confirm:
                 return False
+            
             if not bucket_emptying(client, bucket_name):
                 return False
 
-        # 3. Delete (Spinning)
         with console.status("[accent]Deleting bucket...[/]", spinner="aesthetic"):
             client.delete_bucket(Bucket=bucket_name)
         
-        console.print(f"[success]✔ Bucket '{bucket_name}' deleted.[/success]")
+        console.print(f"[success]✔ Bucket '{bucket_name}' successfully deleted.[/success]")
         return True
     except CE as e:
-        console.print(f"[error]Error: {e}[/error]")
+        console.print(f"[error]✖ Error: {e}[/error]")
         return False
 
 # ======= BACKEND: OBJECT OPS =======
 
 def check_object_exists(client, bucket_name, key):
-    """The truth-teller function."""
     try:
         client.head_object(Bucket=bucket_name, Key=key)
         return True
@@ -214,9 +230,8 @@ def object_listing(client, bucket_name):
         return []
 
 def object_uploading(client, path, bucket_name, key):
-    # SPINNER MOVED INSIDE HERE as requested
     if not os.path.exists(path):
-        console.print(f"[error]File not found: {path}[/error]")
+        console.print(f"[error]✖ File path invalid: {path}[/error]")
         return False
     
     mime_type, _ = mimetypes.guess_type(path)
@@ -230,70 +245,67 @@ def object_uploading(client, path, bucket_name, key):
                 Key=key,
                 ExtraArgs={'ContentType': mime_type}
             )
-        console.print(f"[success]⬆️  Uploaded: {key}[/success]")
+        console.print(f"[success]✔ Upload Complete: {key}[/success]")
         return True
     except CE as e:
-        console.print(f"[error]Upload failed: {e}[/error]")
+        console.print(f"[error]✖ Upload Failed: {e}[/error]")
         return False
 
 def object_folder_uploading(client, bucket_name, folder_path):
-    console.print(f"[accent]🚀 Starting batch upload from: {folder_path}[/accent]")
+    console.print(f"[accent]» Initiating batch upload from: {folder_path}[/accent]")
     count = 0
     for root, dirs, files in os.walk(folder_path):
         for file in files:
             local = os.path.join(root, file)
             relative = os.path.relpath(local, folder_path)
             key = relative.replace("\\", "/")
-            # Reuse single upload function so we get the spinner per file!
             object_uploading(client, local, bucket_name, key)
             count += 1
-    console.print(f"\n[success]✔ Batch complete. {count} files processed.[/success]")
+    console.print(f"\n[success]✔ Batch Operation Complete. {count} files processed.[/success]")
 
 def object_downloading(client, bucket_name, key):
     try:
         dl_name = "downloaded_" + os.path.basename(key)
         with console.status(f"[accent]Downloading {key}...[/]", spinner="aesthetic"):
             client.download_file(Bucket=bucket_name, Key=key, Filename=dl_name)
-        console.print(f"[success]⬇️  Saved to: {dl_name}[/success]")
+        console.print(f"[success]✔ Download Saved: {dl_name}[/success]")
     except CE as e:
-        console.print(f"[error]Download failed: {e}[/error]")
+        console.print(f"[error]✖ Download Failed: {e}[/error]")
 
 def object_deletion(client, bucket_name, key):
-    # 1. TRUTH CHECK
     with console.status("[accent]Verifying object...[/]", spinner="aesthetic"):
         exists = check_object_exists(client, bucket_name, key)
     
     if not exists:
-        console.print(f"[error]❌ Error: Object '{key}' does not exist in this bucket![/error]")
+        console.print(f"[error]✖ Error: Object '{key}' could not be found.[/error]")
         return False
 
-    # 2. DELETE
     try:
-        with console.status(f"[accent]Deleting {key}...[/]", spinner="aesthetic"):
+        with console.status(f"[accent]Removing {key}...[/]", spinner="aesthetic"):
             client.delete_object(Bucket=bucket_name, Key=key)
-        console.print(f"[success]🗑️  Object '{key}' deleted.[/success]")
+        console.print(f"[success]✔ Object '{key}' successfully deleted.[/success]")
         return True
     except CE as e:
-        console.print(f"[error]Delete failed: {e}[/error]")
+        console.print(f"[error]✖ Deletion Failed: {e}[/error]")
         return False
 
 def object_meta_data(client, bucket_name, key):
     try:
         response = client.head_object(Bucket=bucket_name, Key=key)
         
-        # Clean Table Output
-        table = Table(title=f"Metadata: {key}", border_style="border")
-        table.add_column("Property", style="accent")
+        console.print()
+        table = Table(title="Object Properties", border_style="border", box=box.ROUNDED)
+        table.add_column("Property", style="accent", justify="right")
         table.add_column("Value", style="base")
         
-        table.add_row("Size", f"{response['ContentLength']} bytes")
-        table.add_row("Type", response['ContentType'])
+        table.add_row("Key Name", key)
+        table.add_row("Size", format_size(response['ContentLength']))
+        table.add_row("MIME Type", response['ContentType'])
         table.add_row("Last Modified", str(response['LastModified']))
+        
         console.print(table)
     except CE:
-        console.print("[error]❌ Could not fetch metadata.[/error]")
-
-
+        console.print("[error]✖ Unable to retrieve metadata.[/error]")
 
 def object_pre_sign(client, bucket_name, key):
     try:
@@ -303,31 +315,31 @@ def object_pre_sign(client, bucket_name, key):
             ExpiresIn=3600,
         )
         
-        console.print("\n[success]✔ Presigned URL Generated (Valid for 1 Hour):[/success]")
-        
+        console.print("\n[success]✔ Secure Link Generated (Expires in 1 Hour):[/success]")
         console.print(f"[link={url}]{url}[/link]", soft_wrap=True) 
         
         if pyperclip:
             pyperclip.copy(url)
-            console.print("[accent](Link has been copied to your clipboard!)[/accent]")
+            console.print("[accent](URL copied to clipboard)[/accent]")
         else:
-            console.print("[muted](Tip: Install 'pyperclip' to auto-copy this link)[/muted]")
+            console.print("[muted](Install 'pyperclip' to enable auto-copy)[/muted]")
             
     except CE as e:
-        console.print(f"[error]Error: {e}[/error]")
+        console.print(f"[error]✖ Error: {e}[/error]")
 
 # ======= MENUS =======
 
 def bucket_operation_menu():
     while True:
-        console.rule("[bold accent]Bucket Operations[/]")
+        console.print()
+        console.rule("[bold accent]Bucket Management[/]", style="border")
         op = inquirer.select(
-            message="Choose Action:",
+            message="Select Action:",
             choices=[
-                Choice("create", name="Create Bucket"),
-                Choice("list", name="List Buckets"),
+                Choice("create", name="Create New Bucket"),
+                Choice("list", name="List All Buckets"),
                 Choice("delete", name="Delete Bucket"),
-                Choice("menu", name="⬅ Back"),
+                Choice("menu", name="« Return to Main Menu"),
             ],
             default="list",
             pointer="⟢"
@@ -338,46 +350,46 @@ def bucket_operation_menu():
         if op == "create":
             name = inquirer.text(message="Bucket Name:").execute()
             region = inquirer.text(message="Region (default: us-east-1):").execute()
-            # Spinner is inside the function for region check, but create is fast.
-            # We can wrap it here since no input inside.
-            with console.status("[accent]Creating...[/]", spinner="aesthetic"):
+            with console.status("[accent]Provisioning...[/]", spinner="aesthetic"):
                 if bucket_creation(active_client, name, region):
-                    console.print(f"[success]✔ Bucket '{name}' created.[/success]")
+                    console.print(f"[success]✔ Bucket '{name}' provisioned successfully.[/success]")
 
         elif op == "list":
-            with console.status("[accent]Fetching...[/]", spinner="aesthetic"):
+            with console.status("[accent]Querying Region...[/]", spinner="aesthetic"):
                 buckets = bucket_listing(active_client)
             if buckets:
-                t = Table(title="Your Buckets", border_style="border")
-                t.add_column("Name", style="highlight")
-                t.add_column("Created", style="muted")
-                for b in buckets: t.add_row(b['Name'], str(b['CreationDate'].strftime("%Y-%m-%d")))
+                console.print()
+                t = Table(title="Active Buckets", border_style="border", box=box.ROUNDED)
+                t.add_column("Bucket Name", style="highlight")
+                t.add_column("Creation Date", style="muted")
+                for b in buckets: t.add_row(b['Name'], str(b['CreationDate'].strftime("%Y-%m-%d %H:%M")))
                 console.print(t)
             else:
-                console.print("[muted]No buckets found.[/muted]")
+                console.print("[muted]No buckets found in this region.[/muted]")
 
         elif op == "delete":
             target = select_bucket_interactive(active_client)
             if target: bucket_deletion(active_client, target)
 
 def object_operation_menu():
-    console.print("[muted]Select a bucket to work on:[/muted]")
+    console.print("[muted]Select target bucket:[/muted]")
     bucket = select_bucket_interactive(active_client)
     if not bucket: return
 
     while True:
-        console.rule(f"[bold accent]Object Ops: {bucket}[/]")
+        console.print()
+        console.rule(f"[bold accent]Object Management: {bucket}[/]", style="border")
         op = inquirer.select(
-            message="Choose Action:",
+            message="Select Action:",
             choices=[
-                Choice("list", name="List All Objects"),
+                Choice("list", name="List Objects"),
                 Choice("upload", name="Upload File"),
-                Choice("folder", name="Upload Folder"),
+                Choice("folder", name="Upload Folder (Recursive)"),
                 Choice("download", name="Download Object"),
-                Choice("meta", name="View Metadata"),
+                Choice("meta", name="Inspect Metadata"),
                 Choice("presign", name="Generate Presigned URL"),
                 Choice("delete", name="Delete Object"),
-                Choice("menu", name="⬅ Back"),
+                Choice("menu", name="« Return to Main Menu"),
             ],
             default="list",
             pointer="⟢"
@@ -386,28 +398,28 @@ def object_operation_menu():
         if op == "menu": break
 
         if op == "list":
-            with console.status("[accent]Listing...[/]", spinner="aesthetic"):
+            with console.status("[accent]Indexing...[/]", spinner="aesthetic"):
                 objs = object_listing(active_client, bucket)
             if objs:
-                t = Table(border_style="border")
-                t.add_column("Key", style="base")
-                t.add_column("Size", style="muted")
-                for o in objs: t.add_row(o['Key'], f"{o['Size']/1024:.2f} KB")
+                console.print()
+                t = Table(border_style="border", box=box.ROUNDED, title=f"Contents of {bucket}")
+                t.add_column("Object Key", style="base")
+                t.add_column("Size", style="muted", justify="right")
+                for o in objs: t.add_row(o['Key'], format_size(o['Size']))
                 console.print(t)
             else:
-                console.print("[warning]Bucket is empty.[/warning]")
+                console.print("[warning]⚠ Bucket is currently empty.[/warning]")
 
         elif op == "upload":
-            path = inquirer.filepath(message="File Path:").execute()
+            path = inquirer.filepath(message="Local File Path:").execute()
             if path:
-                key = inquirer.text(message="S3 Key:", default=os.path.basename(path)).execute()
+                key = inquirer.text(message="Destination Key:", default=os.path.basename(path)).execute()
                 object_uploading(active_client, path, bucket, key)
 
         elif op == "folder":
             path = inquirer.filepath(message="Folder Path:", only_directories=True).execute()
             if path: object_folder_uploading(active_client, bucket, path)
 
-        # For these operations, we use the SELECTOR instead of typing
         elif op in ["download", "meta", "presign", "delete"]:
             target = select_object_interactive(active_client, bucket)
             if target:
@@ -417,23 +429,25 @@ def object_operation_menu():
                 elif op == "delete": object_deletion(active_client, bucket, target)
 
 def main():
-    splash()
+    print_banner()
 
     profiles = get_available_profiles()
     if not profiles:
-        console.print("[error]No AWS credentials found![/error]")
+        console.print("[error]✖ No AWS configuration found. Please run 'aws configure'.[/error]")
         sys.exit(1)
     
-    init_session(profiles[0]) # Default to first profile
+    init_session(profiles[0])
 
     while True:
+        console.print()
+        console.rule("[bold accent]Main Menu[/]", style="border")
         op = inquirer.select(
-            message="Main Menu:",
+            message="System Operation:",
             choices=[
-                Choice("bucket", name="Bucket Operations"),
-                Choice("object", name="Object Operations"),
-                Choice("profile", name="Switch Profile"),
-                Choice("quit", name="Quit"),
+                Choice("bucket", name="Bucket Management"),
+                Choice("object", name="Object Management"),
+                Choice("profile", name="Switch AWS Profile"),
+                Choice("quit", name="Exit Application"),
             ],
             pointer="⟢"
         ).execute()
@@ -441,14 +455,16 @@ def main():
         if op == "bucket": bucket_operation_menu()
         elif op == "object": object_operation_menu()
         elif op == "profile":
-            p = inquirer.select(message="Select Profile:", choices=profiles, pointer="⟢").execute()
-            init_session(p)
+            p = inquirer.select(message="Select AWS Profile:", choices=profiles, pointer="⟢").execute()
+            if init_session(p):
+                print_banner()
         else:
-            console.print("[warning]Bye! 👋[/warning]")
+            console.print("[warning]Session terminated. Exiting application.[/warning]")
             sys.exit(0)
 
 if __name__ == "__main__":
     try:
         main()
     except KeyboardInterrupt:
+        console.print("\n[warning]Operation cancelled by user.[/warning]")
         sys.exit(0)
