@@ -2,7 +2,7 @@ import boto3
 import os
 import sys
 import mimetypes
-from botocore.exceptions import ClientError as CE
+from botocore.exceptions import ClientError as CE, EndpointConnectionError
 from botocore.config import Config
 from rich.console import Console
 from rich.theme import Theme
@@ -49,7 +49,7 @@ def print_banner():
 / /___/ / /_/ / /_/ / /_/ / ____/ /_/ / / /   
 \____/_/\____/\__,_/\__,_/_/    \__,_/_/_/    
 [/accent]
-[base]      AWS S3 MANAGEMENT INTERFACE  ::  v1.0.3[/base]
+[base]      AWS S3 MANAGEMENT INTERFACE  ::  v1.0.4/base]
     """
     
     status_text = (
@@ -85,6 +85,12 @@ def init_session(profile_name):
         
         current_profile_name = profile_name
         return True
+    except EndpointConnectionError:
+        console.print("[error]✖ Network Error: Cannot connect to AWS.[/error]")
+        return False
+    except CE as e:
+        console.print(f"[error]✖ Failed to initialize session: {e}[/error]")
+        return False
     except Exception as e:
         console.print(f"[error]✖ CRITICAL: Failed to load profile '{profile_name}': {e}[/error]")
         return False
@@ -141,6 +147,9 @@ def bucket_listing(client):
     try:
         response = client.list_buckets()
         return response.get("Buckets", [])
+    except EndpointConnectionError:
+        console.print("[error]✖ Network Error: Cannot connect to AWS.[/error]")
+        return [] # Return empty list so the app doesn't crash
     except CE as e:
         console.print(f"[error]✖ Failed to list buckets: {e}[/error]")
         return []
@@ -153,6 +162,9 @@ def bucket_creation(client, bucket_name, region):
         else:
             client.create_bucket(Bucket=bucket_name, CreateBucketConfiguration={"LocationConstraint": region})
         return True
+    except EndpointConnectionError:
+        console.print("[error]✖ Network Error: Cannot connect to AWS.[/error]")
+        return False
     except CE as e:
         console.print(f"[error]✖ Creation Failed: {e}[/error]")
         return False
@@ -161,7 +173,11 @@ def is_bucket_empty(client, bucket_name):
     try:
         response = client.list_object_versions(Bucket=bucket_name, MaxKeys=1)
         return not ("Versions" in response or "DeleteMarkers" in response)
-    except CE:
+    except EndpointConnectionError:
+        console.print("[error]✖ Network Error: Cannot connect to AWS.[/error]")
+        return False
+    except CE as e:
+        console.print(f"[error]✖ Could not determine if bucket is empty: {e}[/error]")
         return False
 
 def bucket_emptying(client, bucket_name):
@@ -179,6 +195,9 @@ def bucket_emptying(client, bucket_name):
                 if to_delete:
                     client.delete_objects(Bucket=bucket_name, Delete={"Objects": to_delete})
         return True
+    except EndpointConnectionError:
+        console.print("[error]✖ Network Error: Cannot connect to AWS.[/error]")
+        return False
     except CE as e:
         console.print(f"[error]✖ Operation Failed: {e}[/error]")
         return False
@@ -206,6 +225,9 @@ def bucket_deletion(client, bucket_name):
         
         console.print(f"[success]✔ Bucket '{bucket_name}' successfully deleted.[/success]")
         return True
+    except EndpointConnectionError:
+        console.print("[error]✖ Network Error: Cannot connect to AWS.[/error]")
+        return False
     except CE as e:
         console.print(f"[error]✖ Error: {e}[/error]")
         return False
@@ -216,6 +238,9 @@ def check_object_exists(client, bucket_name, key):
     try:
         client.head_object(Bucket=bucket_name, Key=key)
         return True
+    except EndpointConnectionError:
+        console.print("[error]✖ Network Error: Cannot connect to AWS.[/error]")
+        return None
     except CE:
         return False
 
@@ -226,7 +251,11 @@ def object_listing(client, bucket_name):
         for page in paginator.paginate(Bucket=bucket_name):
             results.extend(page.get("Contents", []))
         return results
-    except CE:
+    except EndpointConnectionError:
+        console.print("[error]✖ Network Error: Cannot connect to AWS.[/error]")
+        return []
+    except CE as e:
+        console.print(f"[error]✖ Failed to list objects: {e}[/error]")
         return []
 
 def object_uploading(client, path, bucket_name, key):
@@ -247,6 +276,9 @@ def object_uploading(client, path, bucket_name, key):
             )
         console.print(f"[success]✔ Upload Complete: {key}[/success]")
         return True
+    except EndpointConnectionError:
+        console.print("[error]✖ Network Error: Cannot connect to AWS.[/error]")
+        return False
     except CE as e:
         console.print(f"[error]✖ Upload Failed: {e}[/error]")
         return False
@@ -269,12 +301,17 @@ def object_downloading(client, bucket_name, key):
         with console.status(f"[accent]Downloading {key}...[/]", spinner="aesthetic"):
             client.download_file(Bucket=bucket_name, Key=key, Filename=dl_name)
         console.print(f"[success]✔ Download Saved: {dl_name}[/success]")
+    except EndpointConnectionError:
+        console.print("[error]✖ Network Error: Cannot connect to AWS.[/error]")
     except CE as e:
         console.print(f"[error]✖ Download Failed: {e}[/error]")
 
 def object_deletion(client, bucket_name, key):
     with console.status("[accent]Verifying object...[/]", spinner="aesthetic"):
         exists = check_object_exists(client, bucket_name, key)
+
+    if exists is None:
+        return False # Network error already printed by check_object_exists
     
     if not exists:
         console.print(f"[error]✖ Error: Object '{key}' could not be found.[/error]")
@@ -285,6 +322,9 @@ def object_deletion(client, bucket_name, key):
             client.delete_object(Bucket=bucket_name, Key=key)
         console.print(f"[success]✔ Object '{key}' successfully deleted.[/success]")
         return True
+    except EndpointConnectionError:
+        console.print("[error]✖ Network Error: Cannot connect to AWS.[/error]")
+        return False
     except CE as e:
         console.print(f"[error]✖ Deletion Failed: {e}[/error]")
         return False
@@ -304,6 +344,8 @@ def object_meta_data(client, bucket_name, key):
         table.add_row("Last Modified", str(response['LastModified']))
         
         console.print(table)
+    except EndpointConnectionError:
+        console.print("[error]✖ Network Error: Cannot connect to AWS.[/error]")
     except CE:
         console.print("[error]✖ Unable to retrieve metadata.[/error]")
 
