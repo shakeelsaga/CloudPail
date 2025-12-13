@@ -48,40 +48,28 @@ current_region = "us-east-1"
 # ======= UI SUPPORT =======
 
 def print_banner():
-    # I used a raw string (r"") here to prevent Python from misinterpreting 
-    # the backslashes in the ASCII art as escape characters.
-    art_str = r"""
-   ________                __ ___        _ __ 
-  / ____/ /___  __  ______/ / __ \____ _(_) / 
- / /   / / __ \/ / / / __  / /_/ / __ `/ / /  
-/ /___/ / /_/ / /_/ / /_/ / ____/ /_/ / / /   
-\____/_/\____/\__,_/\__,_/_/    \__,_/_/_/    
-"""
-    art = Text(art_str, style="accent")
+    c = "[#7daea3]"  # Matcha Green
+    e = "[/]"        
+    
+    title_text = (
+        f"{c}   █▀▀ █   █▀█ █ █ █▀▄ █▀█ ▄▀█ █ █  {e}\n"
+        f"{c}   █▄▄ █▄▄ █▄█ █▄█ █▄▀ █▀▀ █▀█ █ █▄▄{e}\n"
+        f"\n[base]AWS S3 MANAGEMENT INTERFACE  ::  v1.0.5[/base]"
+    )
 
-    subtitle = Text("\nAWS S3 MANAGEMENT INTERFACE  ::  v1.0.5", style="base")
-
-    # This status footer ensures the user always knows their context (Profile/Region)
-    # just by glancing at the top of the screen.
+    # Status Footer (Dynamic)
     status_content = (
         f"[muted]Profile:[/muted] [bold highlight]{current_profile_name}[/bold highlight]   "
         f"[muted]Region:[/muted] [bold highlight]{current_region}[/bold highlight]"
     )
 
-    # I'm grouping the logo and subtitle to align them perfectly in the center
-    # of the panel, regardless of the user's terminal width.
-    content = Group(
-        Align.center(art),
-        Align.center(subtitle)
-    )
-
     console.print(
         Panel(
-            content, 
+            Align.center(Text.from_markup(title_text)), 
             border_style="border", 
             expand=False, 
-            padding=(1, 6),
-            subtitle=status_content,
+            padding=(2, 8),
+            subtitle=status_content, 
             subtitle_align="center"
         )
     )
@@ -104,7 +92,6 @@ def init_session(profile_name):
         region = active_session.region_name or "us-east-1"
         current_region = region
 
-        # --- CRITICAL FIX ---
         # Boto3 often defaults to the global endpoint, which causes signature errors 
         # in regions like 'ap-south-1'. Here, I am forcing the client to use 
         # the specific regional endpoint to guarantee the cryptographic signature matches.
