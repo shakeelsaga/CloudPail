@@ -1,7 +1,12 @@
 <p align="center">
-  <img src="assets/CloudPail-Banner.png" alt="CloudPail Banner" width="100%">
+  <a href="https://github.com/shakeelsaga/CloudPail">
+    <img src="https://cdn.jsdelivr.net/gh/shakeelsaga/CloudPail@main/assets/CloudPail-Banner.png" alt="CloudPail Banner" width="100%">
+  </a>
 </p>
 
+# CloudPail
+
+[![TestPyPI Version](https://img.shields.io/badge/TestPyPI-v1.0.5-blue)](https://test.pypi.org/project/cloudpail/)
 [![Python 3.8+](https://img.shields.io/badge/python-3.8+-blue.svg)](https://www.python.org/downloads/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![AWS S3](https://img.shields.io/badge/AWS-S3-orange)](https://aws.amazon.com/s3/)
@@ -39,26 +44,26 @@ Standard Boto3 implementations often default to global endpoints, causing `Signa
 
 ## Installation
 
-### Prerequisites
-* Python 3.8 or higher
-* Valid AWS Credentials configured via AWS CLI or manually in `~/.aws/credentials`
+CloudPail is currently available on **TestPyPI**.
 
-### Setup Instructions
+You can install it directly using `pip`. Because it depends on standard libraries (like `boto3`) hosted on the main PyPI, you must specify both indexes:
 
-1.  **Clone the repository:**
-    ```bash
-    git clone [https://github.com/shakeelsaga/CloudPail.git](https://github.com/shakeelsaga/CloudPail.git)
-    ```
+```bash
+pip install --index-url [https://test.pypi.org/simple/](https://test.pypi.org/simple/) --extra-index-url [https://pypi.org/simple/](https://pypi.org/simple/) cloudpail
+````
 
-2.  **Navigate to the project directory:**
-    ```bash
-    cd CloudPail
-    ```
+To upgrade to the latest version:
 
-3.  **Install the package:**
-    ```bash
-    pip install -e .
-    ```
+```bash
+pip install --upgrade --index-url [https://test.pypi.org/simple/](https://test.pypi.org/simple/) --extra-index-url [https://pypi.org/simple/](https://pypi.org/simple/) cloudpail
+```
+
+### Configuration
+
+CloudPail utilizes your standard AWS credentials.
+
+  * If you have already configured the AWS CLI, no further setup is required.
+  * If you are setting up this machine for the first time, run: `aws configure`
 
 ## Usage
 
@@ -72,18 +77,27 @@ cloudpail
 
 The interface uses standard keyboard controls for efficient operation:
 
-* **Arrow Keys:** Navigate through bucket and object lists.
-* **Enter:** Confirm selection or execute the chosen action.
-* **Type-to-Filter:** Rapidly filter long lists by typing the resource name directly into the menu.
+  * **Arrow Keys:** Navigate through bucket and object lists.
+  * **Enter:** Confirm selection or execute the chosen action.
+  * **Type-to-Filter:** Rapidly filter long lists by typing the resource name directly into the menu.
 
 ## System Architecture
 
 CloudPail is built upon a modern Python stack designed for reliability and performance:
 
-* **Boto3:** Handles low-level AWS SDK interactions, authentication, and session management.
-* **Rich:** Renders high-performance tables, status indicators, and formatted terminal output.
-* **InquirerPy:** Manages interactive user input, validation, and menu navigation.
-* **Pyperclip:** Provides cross-platform clipboard integration for copying presigned URLs.
+  * **Boto3:** Handles low-level AWS SDK interactions, authentication, and session management.
+  * **Rich:** Renders high-performance tables, status indicators, and formatted terminal output.
+  * **InquirerPy:** Manages interactive user input, validation, and menu navigation.
+  * **Pyperclip:** Provides cross-platform clipboard integration for copying presigned URLs.
+
+## Contributing
+
+CloudPail is an open-source project, and contributions are always welcome\! Whether you're interested in fixing bugs, adding new features, or improving documentation, your help is appreciated.
+
+If you'd like to contribute, please feel free to:
+
+  - Fork the repository and submit a pull request.
+  - Open an issue to report bugs or suggest improvements.
 
 ## License
 

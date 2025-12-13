@@ -54,7 +54,7 @@ def print_banner():
     title_text = (
         f"{c}   █▀▀ █   █▀█ █ █ █▀▄ █▀█ ▄▀█ █ █  {e}\n"
         f"{c}   █▄▄ █▄▄ █▄█ █▄█ █▄▀ █▀▀ █▀█ █ █▄▄{e}\n"
-        f"\n[base]AWS S3 MANAGEMENT INTERFACE  ::  v1.0.5[/base]"
+        f"\n[base]AWS S3 MANAGEMENT INTERFACE  ::  v1.0.6[/base]"
     )
 
     # Status Footer (Dynamic)
