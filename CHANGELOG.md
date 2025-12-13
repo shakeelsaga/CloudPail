@@ -4,6 +4,10 @@ All notable changes to the **CloudPail** project will be documented in this file
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/), and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.0.6] - 2025-12-14
+### Changed
+- **Documentation:** Major update to `README.md` to include specific installation commands for TestPyPI, detailed configuration steps, and a new "Contributing" section.
+
 ## [1.0.5] - 2025-12-13
 ### Added
 - **Project History:** Added `CHANGELOG.md` to track version updates and architectural decisions.
