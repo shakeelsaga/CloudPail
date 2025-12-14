@@ -4,6 +4,13 @@ All notable changes to the **CloudPail** project will be documented in this file
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/), and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.0.8] - 2025-12-14
+### Changed
+- **Documentation:**
+  - Added dynamic **PyPI version badge** to `README.md` for real-time release tracking.
+  - Refined installation instructions to ensure command-line compatibility (removed incorrect Markdown link syntax).
+
+
 ## [1.0.7] - 2025-12-14
 ### Fixed
 - **Stability:** Fixed a critical bug where the application would crash if started without an internet connection.

@@ -6,7 +6,7 @@
 
 # CloudPail
 
-[![TestPyPI](https://img.shields.io/pypi/v/cloudpail?label=TestPyPI&logo=pypi&logoColor=white&service=testpypi)](https://test.pypi.org/project/cloudpail/)
+[![PyPI Version](https://img.shields.io/pypi/v/cloudpail?color=blue)](https://pypi.org/project/cloudpail/)
 [![Python 3.8+](https://img.shields.io/badge/python-3.8+-blue.svg)](https://www.python.org/downloads/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![AWS S3](https://img.shields.io/badge/AWS-S3-orange)](https://aws.amazon.com/s3/)
@@ -42,23 +42,23 @@ Standard Boto3 implementations often default to global endpoints, causing `Signa
 * **Recursive Folder Uploads:** Supports batch uploading of directory structures while maintaining the hierarchy within the S3 bucket.
 * **Presigned URL Generation:** Generates secure, time-limited access links (1-hour expiration) and automatically copies them to the system clipboard for immediate sharing.
 
+
 ## Installation
 
-CloudPail is currently available on **TestPyPI**.
-
-You can install it directly using `pip`. Because it depends on standard libraries (like `boto3`) hosted on the main PyPI, you must specify both indexes:
+CloudPail is available on the Python Package Index (PyPI). You can install it directly using `pip`:
 
 ```bash
-pip install --index-url [https://test.pypi.org/simple/](https://test.pypi.org/simple/) --extra-index-url [https://pypi.org/simple/](https://pypi.org/simple/) cloudpail
-````
-
-To upgrade to the latest version:
-
-```bash
-pip install --upgrade --index-url [https://test.pypi.org/simple/](https://test.pypi.org/simple/) --extra-index-url [https://pypi.org/simple/](https://pypi.org/simple/) cloudpail
+pip install cloudpail
 ```
 
-### Configuration
+To upgrade to the latest version, run:
+
+```bash
+pip install --upgrade cloudpail
+```
+
+
+## Configuration
 
 CloudPail utilizes your standard AWS credentials.
 
