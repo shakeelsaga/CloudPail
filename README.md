@@ -6,7 +6,7 @@
 
 # CloudPail
 
-[![TestPyPI Version](https://img.shields.io/badge/TestPyPI-v1.0.5-blue)](https://test.pypi.org/project/cloudpail/)
+[![TestPyPI](https://img.shields.io/pypi/v/cloudpail?label=TestPyPI&logo=pypi&logoColor=white&service=testpypi)](https://test.pypi.org/project/cloudpail/)
 [![Python 3.8+](https://img.shields.io/badge/python-3.8+-blue.svg)](https://www.python.org/downloads/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![AWS S3](https://img.shields.io/badge/AWS-S3-orange)](https://aws.amazon.com/s3/)

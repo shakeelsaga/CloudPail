@@ -4,6 +4,15 @@ All notable changes to the **CloudPail** project will be documented in this file
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/), and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.0.7] - 2025-12-14
+### Fixed
+- **Stability:** Fixed a critical bug where the application would crash if started without an internet connection.
+- **Offline Mode:** Added a persistent "Offline Mode / Connection Failed" warning indicator in the main menu when the session fails to initialize.
+
+### Changed
+- **Dynamic Versioning:** Implemented automatic version detection for the CLI banner using `importlib.metadata`, ensuring the display always matches the installed package version.
+- **Code Quality:** Refactored internal comments to strictly professional standards and cleaned up unused imports.
+
 ## [1.0.6] - 2025-12-14
 ### Changed
 - **Documentation:** Major update to `README.md` to include specific installation commands for TestPyPI, detailed configuration steps, and a new "Contributing" section.

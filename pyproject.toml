@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "cloudpail"
-version = "1.0.6"
+version = "1.0.7"
 description = "The Developer-First CLI for AWS S3 Management."
 readme = "README.md"
 requires-python = ">=3.8"
@@ -30,7 +30,7 @@ dependencies = [
 [project.urls]
 Homepage = "https://github.com/shakeelsaga/CloudPail"
 Issues = "https://github.com/shakeelsaga/CloudPail/issues"
-icon = https://cdn.jsdelivr.net/gh/shakeelsaga/CloudPail@main/assets/CloudPail-Logo-Without-Background.png
+icon = "https://cdn.jsdelivr.net/gh/shakeelsaga/CloudPail@main/assets/CloudPail-Logo-Without-Background.png"
 
 [project.scripts]
 cloudpail = "cloudpail.main:main"
