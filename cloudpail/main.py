@@ -642,65 +642,66 @@ def object_operation_menu():
 
 def main():
     """Main application entry point."""
-    # Enforce profile selection at start to ensure valid session state
-    profiles = get_available_profiles()
-    if not profiles:
-        console.print(
-            "[error]✖ No AWS configuration found. Please run 'aws configure'.[/error]"
-        )
-        sys.exit(1)
-
-    # Attempt initial session connection
-    # If this fails (e.g. no internet), active_client will be set to None
-    init_session(profiles[0])
-
-    # Display application banner
-    print_banner()
-
-    # Main Event Loop
-    while True:
-        console.print()
-        console.rule(
-            f"[bold accent]Main Menu[/] {get_context_string()}", style="border"
-        )
-
-        # Display warning if offline
-        if active_client is None:
+    try:
+        # Enforce profile selection at start to ensure valid session state
+        profiles = get_available_profiles()
+        if not profiles:
             console.print(
-                "[warning]⚠ Offline Mode / Connection Failed[/warning]",
-                justify="center",
+                "[error]✖ No AWS configuration found. Please run 'aws configure'.[/error]"
+            )
+            sys.exit(1)
+
+        # Attempt initial session connection
+        init_session(profiles[0])
+
+        # Display application banner
+        print_banner()
+
+        # Main Event Loop
+        while True:
+            console.print()
+            console.rule(
+                f"[bold accent]Main Menu[/] {get_context_string()}", style="border"
             )
 
-        op = inquirer.select(
-            message="System Operation:",
-            choices=[
-                Choice("bucket", name="Bucket Management"),
-                Choice("object", name="Object Management"),
-                Choice("profile", name="Switch AWS Profile"),
-                Choice("quit", name="Exit Application"),
-            ],
-            pointer="⟢",
-        ).execute()
+            # Display warning if offline
+            if active_client is None:
+                console.print(
+                    "[warning]⚠ Offline Mode / Connection Failed[/warning]",
+                    justify="center",
+                )
 
-        if op == "bucket":
-            bucket_operation_menu()
-        elif op == "object":
-            object_operation_menu()
-        elif op == "profile":
-            p = inquirer.select(
-                message="Select AWS Profile:", choices=profiles, pointer="⟢"
+            # The inquirer prompt will raise KeyboardInterrupt if Ctrl+C is pressed
+            op = inquirer.select(
+                message="System Operation:",
+                choices=[
+                    Choice("bucket", name="Bucket Management"),
+                    Choice("object", name="Object Management"),
+                    Choice("profile", name="Switch AWS Profile"),
+                    Choice("quit", name="Exit Application"),
+                ],
+                pointer="⟢",
             ).execute()
-            if init_session(p):
-                # Repaint banner to reflect new profile
-                print_banner()
-        else:
-            console.print("[warning]Session terminated. Exiting application.[/warning]")
-            sys.exit(0)
+
+            if op == "bucket":
+                bucket_operation_menu()
+            elif op == "object":
+                object_operation_menu()
+            elif op == "profile":
+                p = inquirer.select(
+                    message="Select AWS Profile:", choices=profiles, pointer="⟢"
+                ).execute()
+                if init_session(p):
+                    print_banner()
+            else:
+                console.print("[warning]Session terminated. Exiting application.[/warning]")
+                sys.exit(0)
+
+    except KeyboardInterrupt:
+        # This block catches Ctrl+C from anywhere inside the main function or its sub-calls
+        console.print("\n[warning]⚠ Operation cancelled by user. Exiting...[/warning]")
+        sys.exit(0)
 
 
 if __name__ == "__main__":
-    try:
-        main()
-    except KeyboardInterrupt:
-        console.print("\n[warning]Operation cancelled by user.[/warning]")
-        sys.exit(0)
+    main()
