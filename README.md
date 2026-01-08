@@ -6,13 +6,7 @@
 
 # CloudPail
 
-[![PyPI Version](https://img.shields.io/pypi/v/cloudpail?color=blue)](https://pypi.org/project/cloudpail/)
-[![Python 3.8+](https://img.shields.io/badge/python-3.8+-blue.svg)](https://www.python.org/downloads/)
-[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
-[![AWS S3](https://img.shields.io/badge/AWS-S3-orange)](https://aws.amazon.com/s3/)
-[![Code Style: Black](https://img.shields.io/badge/code%20style-black-000000.svg)](https://github.com/psf/black)
-
-**The Developer-First Interface for AWS S3 Management.**
+**A terminal-first interface for safe, efficient AWS S3 management.**
 
 CloudPail is a Python-based TUI that simplifies everyday S3 operations by combining the speed of the AWS CLI with the clarity and safety of an interactive interface.
 
